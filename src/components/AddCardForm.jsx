@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { bindActionCreators } from 'redux';
+import { useDispatch } from 'react-redux';
+import * as actionCreators from '../action-creatons/list-action-creators';
 
-const AddCardForm = ({renderedCards, setRenderedCards, setOpenForm}) => {
+
+const AddCardForm = ({setOpenForm, listId}) => {
+
+  const dispatch = useDispatch();                                   
+  const { addCard } = bindActionCreators(actionCreators, dispatch); 
 
   const defaultCard = {
     id: null,
@@ -13,10 +20,6 @@ const AddCardForm = ({renderedCards, setRenderedCards, setOpenForm}) => {
   }
 
   const [newCard, setNewCard] = useState(defaultCard);
-  
-  const addCard = (card) => { 
-    setRenderedCards([card, ...renderedCards])
-  }
 
   const resetForm = (evt) => {
     if (evt.currentTarget.classList.contains('new_card_form')) {
@@ -29,7 +32,7 @@ const AddCardForm = ({renderedCards, setRenderedCards, setOpenForm}) => {
 
   const submitForm = (evt) => {
     evt.preventDefault();
-    addCard({...newCard, id: Date.now()});
+    addCard({id: listId, card: {...newCard, id: Date.now()}});
     resetForm(evt);
   }
 
@@ -91,18 +94,8 @@ const AddCardForm = ({renderedCards, setRenderedCards, setOpenForm}) => {
 };
 
 AddCardForm.propTypes = {
-  renderedCards:  PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      title: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
-      theme: PropTypes.string.isRequired,
-      importance: PropTypes.bool.isRequired,
-      done: PropTypes.bool.isRequired,
-    }).isRequired
-  ),
-  setRenderedCards: PropTypes.func.isRequired,
-  setOpenForm: PropTypes.func.isRequired 
+  setOpenForm: PropTypes.func.isRequired,
+  listId: PropTypes.number.isRequired
 }
 
 export default AddCardForm;

@@ -1,27 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import List from './List';
-import { data } from '../data';
 
 const Main = () => {
-
-  const [tracker, setTracker] = useState(data);
-
-  const [currentList, setCurrentList] = useState([])
-  const [currentCard, setCurrentCard] = useState({})
+  const tracker = useSelector((state) => state.list);
 
   return (
     <main className="page_wrap">
       {tracker.map(list => {
         return <List 
-          setTracker={setTracker} 
           key={list.id} 
           list={list}
-          currentList={currentList}
-          currentCard={currentCard}
-          setCurrentList={setCurrentList}
-          setCurrentCard={setCurrentCard}
+          listLength={list.cards.length}
         />
-      })}
+      })} 
     </main>
   );
 };

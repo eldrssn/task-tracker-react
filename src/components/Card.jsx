@@ -1,80 +1,56 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import PropTypes from 'prop-types';
 import { getStylesForCard } from '../utils';
+import * as actionCreators from '../action-creatons/list-action-creators';
+import { useDispatch } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { useDrag, useDrop } from 'react-dnd';
+import { ItemTypes } from '../dragndrop/item-types';
 
-const Card = ({
-  card, 
-  renderedCards, 
-  currentList, 
-  setCurrentList, 
-  currentCard, 
-  setCurrentCard,
-  setRenderedCards}) => {
+
+const Card = ({ card, listId, listLength }) => {
+
+  const dispatch = useDispatch(); 
+  const { doneCard, deleteCard, dropCard } = bindActionCreators(actionCreators, dispatch); 
 
   const {id, title, description, theme, done, importance} = card;
 
-  const makeCardDone = (id) => { 
-    const doneCard = renderedCards.find(item => item.id === id);
-    doneCard.done = !doneCard.done;
-    renderedCards.splice(renderedCards.indexOf(doneCard), 1);
-    renderedCards.push(doneCard);
-    setRenderedCards([...renderedCards])
-  }
+  const ref = useRef(null);
 
-  const deleteCard = (id) => {
-    setRenderedCards([...renderedCards.filter(card => card.id !== id)])
-  }
-
-  const dragLeaveHandler = (evt) => {
-    evt.target.style.boxShadow = 'none'
-  }
-  
-  const dragStartHandler = (evt, list, card) => {
-    setCurrentList(list);
-    setCurrentCard(card);
-  }
-  
-  const dragEndHandler = (evt, list, card) => {
-    evt.target.style.boxShadow = 'none'
-    setRenderedCards(renderedCards.map(item => {
-      if (item.id === list.id) {
-        return list;
+  const [{isOver}, drop] = useDrop({
+    accept: ItemTypes.CARD,
+    drop: (dragItem, monitor) => {
+      if (id === dragItem.id) {
+        return;
       }
-      if (item.id === currentList.id) {
-        return currentList;
+      // проверка, если доска не пустая
+      if (listLength) {
+        dropCard({id, listId, dragItem})
       }
-      return item;
-    }))
-  
-  }
-  
-  const dropHandler = (evt, list, card) => {
-    evt.preventDefault();
-    const currentIndex = currentList.indexOf(currentCard);
-    currentList.splice(currentIndex, 1);
-    const dropIndex = list.indexOf(card);
-    list.splice(dropIndex + 1, 0, currentCard);
-  
-    setRenderedCards(renderedCards.map(item => {
-      if (item.id === list.id) {
-        return list;
+    }, 
+    collect: (monitor) => {      
+      return {
+        isOver: monitor.isOver({ shallow: true }),      
       }
-      if (item.id === currentList.id) {
-        return currentList;
-      }
-      return item;
-    }))
-  }
-
-
+    }
+  })
+  
+  const [{isDragging}, drag] = useDrag({
+    type: ItemTypes.CARD,
+    item: () => {
+      return {id, listId};
+    },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging()
+    })
+  })
+  
+  drag(drop(ref));
+  
   return (
     <article 
+      ref={ref}
       className={getStylesForCard(done, importance)} 
-      draggable={done ? false : true}
-      onDragLeave={(evt) => dragLeaveHandler(evt)}
-      onDragStart={(evt) => dragStartHandler(evt, renderedCards, card)}
-      onDragEnd={(evt) => dragEndHandler(evt, renderedCards, card)}
-      onDrop={(evt) => dropHandler(evt, renderedCards, card)}
     >
       <h3 className="card_title">{title}</h3>
       <p className="card_text">{description}</p>
@@ -88,7 +64,7 @@ const Card = ({
               </svg> 
             </button>
           :
-            <button type="button" onClick={() => makeCardDone(id)} className="card_check">
+            <button type="button" onClick={() => doneCard(id)} className="card_check">
               <svg width="20" height="20" viewBox="0 0 24 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path id="check_icon" fillRule="evenodd" clipRule="evenodd"
                 d="M24 2.62787L9.54844 19.3028L0 9.75432L2.83722 6.91709L9.33855 13.4184L20.9678 0L24 2.62787Z" fill="white" />
@@ -110,37 +86,8 @@ Card.propType = {
     importance: PropTypes.bool.isRequired,
     done: PropTypes.bool.isRequired,
   }).isRequired, 
-  renderedCards:  PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      title: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
-      theme: PropTypes.string.isRequired,
-      importance: PropTypes.bool.isRequired,
-      done: PropTypes.bool.isRequired,
-    }).isRequired
-  ), 
-  currentList: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number,
-      title: PropTypes.string,
-      description: PropTypes.string,
-      theme: PropTypes.string,
-      importance: PropTypes.bool,
-      done: PropTypes.bool,
-    })
-  ), 
-  setCurrentList: PropTypes.func.isRequired,
-  currentCard: PropTypes.shape({
-    id: PropTypes.number,
-    title: PropTypes.string,
-    description: PropTypes.stringd,
-    theme: PropTypes.string,
-    importance: PropTypes.bool,
-    done: PropTypes.bool,
-  }), 
-  setCurrentCard: PropTypes.func.isRequired,
-  setRenderedCards: PropTypes.func.isRequired
+  listId: PropTypes.number.isRequired,
+  listLength: PropTypes.number.isRequired
 }
 
 
